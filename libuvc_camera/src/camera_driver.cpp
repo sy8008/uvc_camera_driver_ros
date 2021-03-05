@@ -69,17 +69,15 @@ CameraDriver::CameraDriver(ros::NodeHandle nh, ros::NodeHandle priv_nh)
   sensor_msgs::CameraInfo::Ptr cinfo_temp(
     new sensor_msgs::CameraInfo(cinfo_manager_.getCameraInfo()));
 
-  // sensor_msgs::CameraInfo::Ptr cinfo_temp(
-  //   new sensor_msgs::CameraInfo(cinfo_manager_.loadCameraInfo(cam_url)));
 
-  // cv::Mat R = cv::Mat::eye(cv::Size(3,3),CV_32FC1);  // 对角线为1的对角矩阵
-  // cv::Mat dist_coff=(cv::Mat_<double>(1,4)<<cinfo_temp->D[0],cinfo_temp->D[1],cinfo_temp->D[2],cinfo_temp->D[3]);
-  // cv::Mat cam_matrix=(cv::Mat_<double>(3,3)<<cinfo_temp->K[0],cinfo_temp->K[1],cinfo_temp->K[2],\
-  //                                           cinfo_temp->K[3],cinfo_temp->K[4],cinfo_temp->K[5],\
-  //                                           cinfo_temp->K[6],cinfo_temp->K[7],cinfo_temp->K[8]);
+  cv::Mat R = cv::Mat::eye(cv::Size(3,3),CV_32FC1);  // 对角线为1的对角矩阵
+  cv::Mat dist_coff=(cv::Mat_<double>(1,4)<<cinfo_temp->D[0],cinfo_temp->D[1],cinfo_temp->D[2],cinfo_temp->D[3]);
+  cv::Mat cam_matrix=(cv::Mat_<double>(3,3)<<cinfo_temp->K[0],cinfo_temp->K[1],cinfo_temp->K[2],\
+                                            cinfo_temp->K[3],cinfo_temp->K[4],cinfo_temp->K[5],\
+                                            cinfo_temp->K[6],cinfo_temp->K[7],cinfo_temp->K[8]);
 
-  // new_cam_matrix=cv::getOptimalNewCameraMatrix(cam_matrix,dist_coff,cv::Size(cinfo_temp->width,cinfo_temp->height),1,cv::Size(cinfo_temp->width,cinfo_temp->height));
-  // cv::initUndistortRectifyMap(new_cam_matrix,dist_coff,R,cam_matrix,cv::Size(cinfo_temp->width,cinfo_temp->height),CV_32FC1,map1,map2);
+  new_cam_matrix=cv::getOptimalNewCameraMatrix(cam_matrix,dist_coff,cv::Size(cinfo_temp->width,cinfo_temp->height),1,cv::Size(cinfo_temp->width,cinfo_temp->height));
+  cv::initUndistortRectifyMap(new_cam_matrix,dist_coff,R,cam_matrix,cv::Size(cinfo_temp->width,cinfo_temp->height),CV_32FC1,map1,map2);
 
 
 
@@ -295,19 +293,19 @@ void CameraDriver::ImageCallback(uvc_frame_t *frame) {
 
 
   // cout<<"dis_coff: "<<dist_coff<<endl;
-  // cout<<"new_cam_matrix: "<<new_cam_matrix<<endl;
+  cout<<"new_cam_matrix: "<<new_cam_matrix<<endl;
 
-  // for(int i=0;i<3;i++)
-  //   for(int j=0;j<3;j++){
-  //     cinfo->K[3*i+j]=new_cam_matrix.ptr<double>(i)[j];
-  //   }
+  for(int i=0;i<3;i++)
+    for(int j=0;j<3;j++){
+      cinfo->K[3*i+j]=new_cam_matrix.ptr<double>(i)[j];
+    }
   
-  // for(int i=0;i<3;i++){
-  //     cinfo->D[i]=0.0;
-  // }
+  for(int i=0;i<4;i++){
+      cinfo->D[i]=0.0;
+  }
   
 
-  // cv::remap(distort_img,undistort_img_cv,map1,map2,cv::INTER_LINEAR);
+  cv::remap(distort_img,undistort_img_cv,map1,map2,cv::INTER_LINEAR);
 
   // cv::undistort(distort_img,undistort_img_cv,cam_matrix,dist_coff,new_cam_matrix);
   cv_ptr->image=undistort_img_cv;
@@ -316,8 +314,8 @@ void CameraDriver::ImageCallback(uvc_frame_t *frame) {
   // cv::waitKey(1);
 
 
-  cam_pub_.publish(image, cinfo);
-  // cam_pub_.publish(cv_ptr->toImageMsg(), cinfo);
+  // cam_pub_.publish(image, cinfo);
+  cam_pub_.publish(cv_ptr->toImageMsg(), cinfo);
 
   if (config_changed_) {
     config_server_.updateConfig(config_);
